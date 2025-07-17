@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>管理後台</title>
+<style>
+    body { font-family: Arial; padding: 20px; }
+    #news-form, #login-form, #success-message { margin-top: 20px; }
+    html, body { height: 100%; margin: 0; }
+    .center-container {
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; flex-direction: column;
+    }
+    .box {
+      padding: 20px; border: 1px solid #ccc;
+      border-radius: 10px; box-shadow: 0 0 10px #aaa;
+      background-color: #fff; width: 90%; max-width: 500px;
+    }
+</style>
+</head>
+<body>
+<div class="center-container"><div class="box">
+<h2>🔐 管理後台</h2>
+<div id="login-form">
+<h3>管理員登入</h3>
+<input id="admin-username" placeholder="帳號" type="text"/><br/><br/>
+<input id="admin-password" placeholder="密碼" type="password"/><input id="toggle-password" type="checkbox"/> 顯示密碼<br/><br/><br/>
+<button onclick="adminLogin()">登入</button>
+</div>
+<div id="news-form" style="display:none;">
+<h3>新增新聞（只保留一筆）</h3>
+<input id="news-title" placeholder="新聞標題" type="text"/><br/><br/>
+<textarea id="news-content" placeholder="新聞內容"></textarea><br/><br/>
+<input type="file" id="news-image" accept="image/*" /><br/><br/>
+<img id="preview" src="" style="max-width:100%; display:none;" /><br/><br/>
+<button onclick="deleteNews()">刪除新聞</button><br/><br/>
+<button onclick="submitNews()">送出</button>
+</div>
+<div id="success-message" style="display:none;">✅ 新聞新增成功！</div>
+<script>
+function adminLogin() {
+  const username = document.getElementById("admin-username").value;
+  const password = document.getElementById("admin-password").value;
+  if (username === "admin" && password === "admin123") {
+    document.getElementById("login-form").style.display = "none";
+    document.getElementById("news-form").style.display = "block";
+  } else {
+    alert("帳號或密碼錯誤！");
+  }
+}
+
+document.getElementById("toggle-password").addEventListener("change", function () {
+  const pw = document.getElementById("admin-password");
+  pw.type = this.checked ? "text" : "password";
+});
+
+document.getElementById("news-image").addEventListener("change", function () {
+  const file = this.files[0];
+  const preview = document.getElementById("preview");
+  if (file) {
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  } else {
+    preview.style.display = "none";
+  }
+});
+
+async function submitNews() {
+  const title = document.getElementById("news-title").value;
+  const content = document.getElementById("news-content").value;
+  const imageInput = document.getElementById("news-image");
+
+  if (!title || !content) {
+    alert("請填寫所有欄位！");
+    return;
+  }
+
+  let imageFilename = "";
+  if (imageInput.files.length > 0) {
+    const formData = new FormData();
+    formData.append("image", imageInput.files[0]);
+    const res = await fetch("/upload_image", { method: "POST", body: formData });
+    const result = await res.json();
+    if (result.status === "success") {
+      imageFilename = result.filename;
+    } else {
+      alert("圖片上傳失敗：" + result.message);
+      return;
+    }
+  }
+
+  await fetch("/add_news", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, content, image: imageFilename })
+  });
+
+  document.getElementById("news-form").style.display = "none";
+  document.getElementById("success-message").style.display = "block";
+}
+
+async function deleteNews() {
+  if (!confirm("確定要刪除目前的新聞嗎？")) return;
+  const res = await fetch("/delete_news", { method: "POST" });
+  const result = await res.json();
+  if (result.status === "success") {
+    alert("新聞已刪除");
+    location.reload();
+  } else {
+    alert("刪除失敗：" + result.message);
+  }
+}
+</script>
+</div></div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>最新新聞（前台）</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      text-align: center;
+    }
+    .news-item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+      display: inline-block;
+      text-align: left;
+      max-width: 600px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2>📰 最新新聞</h2>
+  <div id="news-list"></div>
+
+  <script>
+    async function loadNews() {
+      const res = await fetch("/get_news");
+      const news = await res.json();
+      const newsList = document.getElementById("news-list");
+      newsList.innerHTML = "";
+
+      if (news.title && news.content) {
+        const item = document.createElement("div");
+        item.className = "news-item";
+        item.innerHTML = `
+          <h4>${news.title}</h4>
+          ${news.image ? `<img src="/static/uploads/${news.image}" style="max-width:100%"/><br/>` : ""}
+          <p>${news.content}</p>
+          <small>${new Date(news.time).toLocaleString()}</small>
+        `;
+        newsList.appendChild(item);
+      } else {
+        newsList.innerHTML = "<p>目前沒有新聞。</p>";
+      }
+    }
+
+    loadNews();
+  </script>
+</body>
+</html>
